@@ -8,8 +8,7 @@ import Animated, {
   interpolate,
   runOnJS
 } from 'react-native-reanimated';
-import { NetworkInfo } from 'react-native-network-info';
-
+import * as Network from 'expo-network';
 import { EventHandlingDemo } from '@/components/EventHandlingDemo';
 import { useScale } from '@/hooks/useScale';
 import VideoPlayer from '@/components/VideoPlayer';
@@ -25,23 +24,24 @@ export default function FocusDemoScreen() {
   const scaleValue = useSharedValue(0.5);
   const opacityValue = useSharedValue(1);
   const [streamUrl, setStreamUrl] = useState(null);
+
   useEffect(() => {
     const fetchStreamUrl = async () => {
-        const ipAddress = await NetworkInfo.getIPAddress();
+      let ip = await Network.getIpAddressAsync();
       try {
         const response = await fetch(
           'https://emeltv-backend.vercel.app/stream-url?device=android',
           {
             method: 'GET',
             headers: {
-              'x-client-ip': ipAddress ?? '', // You should set this dynamically if needed
+              'x-client-ip': ip ?? '', // You should set this dynamically if needed
             },
           }
         );
 
         const data = await response.json();
         // Assuming the server returns: { url: 'https://example.com/stream.m3u8' }
-        setStreamUrl(data.url);
+        setStreamUrl(data.url ?? 'https://example.com/stream.m3u8');
 
       } catch (err) {
         console.error('Failed to fetch stream URL:', err);
@@ -97,7 +97,7 @@ export default function FocusDemoScreen() {
     <>
       <View style={{ flex: 1 }}>
         <VideoPlayer 
-          uri="https://emeltv-backend.vercel.app/stream-url?device=android" 
+          uri={streamUrl}
         />
       </View>
       {/* <EventHandlingDemo /> */}

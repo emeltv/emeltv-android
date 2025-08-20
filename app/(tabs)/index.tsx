@@ -29,7 +29,16 @@ export default function FocusDemoScreen() {
 
   useEffect(() => {
     const fetchStreamUrl = async () => {
-      let ip = await Network.getIpAddressAsync();
+      let ip = '';
+      try {
+        const ipRes = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipRes.json();
+        ip = ipData?.ip ?? '';
+      } catch {
+        try {
+          ip = await Network.getIpAddressAsync();
+        } catch {}
+      }
       const device = getBackendDeviceParam();
       const ua = getPlaybackUserAgent();
       setUserAgent(ua);

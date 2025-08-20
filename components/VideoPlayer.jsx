@@ -9,11 +9,17 @@ import { Video } from 'react-native-video'
 const CrossPlatformVideoPlayer = ({ uri, userAgent }) => {
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
-  const [paused, setPaused] = useState(true);
+  const [paused, setPaused] = useState(false);
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
+
+  // Autoplay when URI changes
+  useEffect(() => {
+    if (!uri) return;
+    setPaused(false);
+  }, [uri]);
 
   // Web-specific HLS setup
   useEffect(() => {
@@ -35,6 +41,8 @@ const CrossPlatformVideoPlayer = ({ uri, userAgent }) => {
         
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           setLoading(false);
+          setPaused(false);
+          videoRef.current?.play?.();
         });
         
         hls.on(Hls.Events.ERROR, (event, data) => {
@@ -58,6 +66,8 @@ const CrossPlatformVideoPlayer = ({ uri, userAgent }) => {
         videoRef.current.src = uri;
         videoRef.current.addEventListener('loadedmetadata', () => {
           setLoading(false);
+          setPaused(false);
+          videoRef.current.play?.();
         });
       }
     };
@@ -74,6 +84,7 @@ const CrossPlatformVideoPlayer = ({ uri, userAgent }) => {
   const handleLoad = (meta) => {
     setLoading(false);
     setDuration(meta.duration);
+    setPaused(false);
   };
 
   const handleProgress = (data) => {
@@ -181,6 +192,7 @@ const CrossPlatformVideoPlayer = ({ uri, userAgent }) => {
           style={fullscreen ? styles.fullscreenVideo : styles.video}
           playsInline
           preload="auto"
+          autoPlay
           onClick={togglePlayPause}
         />
       ) : (

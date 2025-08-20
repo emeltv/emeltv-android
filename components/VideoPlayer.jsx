@@ -6,7 +6,7 @@ import { Video } from 'react-native-video'
 // Platform-specific imports
 
 
-const CrossPlatformVideoPlayer = ({ uri }) => {
+const CrossPlatformVideoPlayer = ({ uri, userAgent }) => {
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
   const [paused, setPaused] = useState(true);
@@ -21,7 +21,6 @@ const CrossPlatformVideoPlayer = ({ uri }) => {
 
     const initializeHls = async () => {
       const Hls = (await import('hls.js')).default;
-      
       if (Hls.isSupported()) {
         const hls = new Hls({
           enableWorker: true,
@@ -70,7 +69,7 @@ const CrossPlatformVideoPlayer = ({ uri }) => {
         hlsRef.current.destroy();
       }
     };
-  }, [uri]);
+  }, [uri, userAgent]);
 
   const handleLoad = (meta) => {
     setLoading(false);
@@ -187,7 +186,7 @@ const CrossPlatformVideoPlayer = ({ uri }) => {
       ) : (
         <Video
           ref={videoRef}
-          source={{ uri }}
+          source={{ uri, headers: { 'User-Agent': userAgent } }}
           style={fullscreen ? styles.fullscreenVideo : styles.video}
           paused={paused}
           resizeMode="contain"
@@ -196,6 +195,8 @@ const CrossPlatformVideoPlayer = ({ uri }) => {
           onEnd={handleEnd}
           onError={(error) => console.error('Video error:', error)}
           controls={false}
+          // Pass UA on Android TV via prop as well
+          {...(Platform.OS === 'android' && userAgent ? { userAgent } : {})}
           bufferConfig={{
             minBufferMs: 15000,
             maxBufferMs: 30000,

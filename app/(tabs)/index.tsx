@@ -12,6 +12,7 @@ import * as Network from 'expo-network';
 import { EventHandlingDemo } from '@/components/EventHandlingDemo';
 import { useScale } from '@/hooks/useScale';
 import VideoPlayer from '@/components/VideoPlayer';
+import { getPlaybackUserAgent, getBackendDeviceParam } from '@/utils/getPlaybackUserAgent';
 
 export default function FocusDemoScreen() {
   const styles = useFocusDemoScreenStyles();
@@ -23,26 +24,35 @@ export default function FocusDemoScreen() {
   
   const scaleValue = useSharedValue(0.5);
   const opacityValue = useSharedValue(1);
-  const [streamUrl, setStreamUrl] = useState(null);
+  const [streamUrl, setStreamUrl] = useState<string | null>(null);
+  const [userAgent, setUserAgent] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchStreamUrl = async () => {
       let ip = await Network.getIpAddressAsync();
+      const device = getBackendDeviceParam();
+      const ua = getPlaybackUserAgent();
+      setUserAgent(ua);
+
+      const headers: Record<string, string> = {
+        'X-Client-IP': ip ?? '',
+      };
+      // Browsers block setting User-Agent; only set on native
+      if (Platform.OS !== 'web') {
+        headers['User-Agent'] = ua;
+      }
+
       try {
         const response = await fetch(
-          'https://emeltv-backend.vercel.app/stream-url?device=android',
+          `https://emeltv-backend.vercel.app/stream-url?device=${device}`,
           {
             method: 'GET',
-            headers: {
-              'x-client-ip': ip ?? '', // You should set this dynamically if needed
-            },
+            headers,
           }
         );
 
         const data = await response.json();
-        // Assuming the server returns: { url: 'https://example.com/stream.m3u8' }
-        setStreamUrl(data.url ?? 'https://example.com/stream.m3u8');
-
+        setStreamUrl(data.stream_url ?? null);
       } catch (err) {
         console.error('Failed to fetch stream URL:', err);
       }
@@ -98,6 +108,7 @@ export default function FocusDemoScreen() {
       <View style={{ flex: 1 }}>
         <VideoPlayer 
           uri={streamUrl}
+          userAgent={userAgent}
         />
       </View>
       {/* <EventHandlingDemo /> */}
